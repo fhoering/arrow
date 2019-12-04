@@ -26,6 +26,15 @@ from pyarrow.lib import _detect_compression
 from pyarrow.lib cimport *
 
 
+cdef file_system_from_uri(uri):
+    cdef:
+        shared_ptr[CFileSystem] *c_fs
+        c_string *c_path
+
+    uristr = _path_as_bytes(uri)
+    FileSystemFromUri(uristr, c_fs, c_path)
+    return FileSystem.init(self, *c_fs)
+
 cdef inline c_string _path_as_bytes(path) except *:
     # handle only abstract paths, not bound to any filesystem like pathlib is,
     # so we only accept plain strings
