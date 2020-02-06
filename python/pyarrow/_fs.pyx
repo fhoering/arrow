@@ -267,6 +267,31 @@ cdef class FileSystem:
             stat = GetResultValue(self.fs.GetTargetStats(c_path))
         return FileStats.wrap(stat)
 
+    def batch_info(self, paths):
+        """Give details of entry for all paths
+
+        Any symlink is automatically dereferenced, recursively. A non-existing
+        or unreachable file returns a FileStats object and has a FileType of
+        value NonExistent. An exception indicates a truly exceptional condition
+        (low-level I/O error, etc.).
+
+        Parameters
+        ----------
+        path: List of str
+
+        Returns
+        -------
+        file_stat: List of FileStats
+        """
+        cdef:
+            vector[CFileStats] stats
+            vector[c_string] cpaths
+        
+        cpaths = [_path_as_bytes(s) for s in paths]
+        with nogil:
+            stats = GetResultValue(self.fs.GetTargetStats(cpaths))
+        return [FileStats.wrap(stat) for stat in stats]
+
     def ls(self, path, detail=False, recursive=False):
         """List objects at path.
 
@@ -308,7 +333,7 @@ cdef class FileSystem:
         elif isinstance(path, (list, tuple)):
             paths = [_path_as_bytes(s) for s in path]
             with nogil:
-                stats = GetResultValue(self.fs.GetTargetStats(paths))
+                stats = GetResultValue(self.fs.GetTargetStats(paths))               
         else:
             raise TypeError('Must pass either str,'
                             'list of str or FileSelector')

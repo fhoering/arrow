@@ -640,15 +640,22 @@ cdef class FileSystemSource(Source):
         partitions : List[Expression]
             Attach aditional partition information for the file paths.
         """
-        cdef:
-            FileStats stats
+        cdef:          
             Expression expr
             vector[CFileStats] c_file_stats
             vector[shared_ptr[CExpression]] c_partitions
             CResult[shared_ptr[CSource]] result
 
-        for stats in filesystem.ls(paths_or_selector, detail=True):
-            c_file_stats.push_back(stats.unwrap())
+
+        if isinstance(paths_or_selector, FileSelector):
+            stats = filesystem.ls(paths_or_selector, detail=True)
+        elif isinstance(paths_or_selector, (list, tuple)):
+            stats = filesystem.batch_info(paths_or_selector)
+        else:
+            raise TypeError('Must pass either paths or a FileSelector')            
+
+        for stat in stats:
+            c_file_stats.push_back(stat.unwrap())
 
         for expr in partitions:
             c_partitions.push_back(expr.unwrap())
